@@ -122,7 +122,8 @@ LUALIB_API int luaopen_utf8(lua_State *);
 #define lL_openlib(l, n) (luaL_requiref(l, #n, luaopen_##n, 1), lua_pop(l, 1))
 #endif
 
-static char *textadept_home, *platform;
+static char *textadept_home;
+static const char *platform;
 
 // User interface objects and related macros.
 static Scintilla *focused_view, *dummy_view, *command_entry;
@@ -231,7 +232,10 @@ static lua_State *lua;
 static int quit;
 #endif
 static int initing, closing;
-static int show_tabs = TRUE, tab_sync;
+static int show_tabs = TRUE;
+#if GTK
+static int tab_sync;
+#endif
 enum {SVOID, SINT, SLEN, SPOS, SCOLOR, SBOOL, SKEYMOD, SSTRING, SSTRINGRET};
 
 // Forward declarations.
@@ -1413,7 +1417,7 @@ static int lL_dofile(lua_State *L, const char *filename) {
     gtk_dialog_run(GTK_DIALOG(dialog)), gtk_widget_destroy(dialog);
 #elif CURSES
     WINDOW *win = newwin(0, 0, 1, 0);
-    wprintw(win, lua_tostring(L, -1)), wrefresh(win);
+    wprintw(win, "%s\n", lua_tostring(L, -1)), wrefresh(win);
     getch(), delwin(win);
 #endif
     lua_settop(L, 0);
@@ -1435,6 +1439,7 @@ static int lreset(lua_State *L) {
   return 0;
 }
 
+#if GTK
 static int emit_timeout(void *data) {
   int *refs = (int *)data;
   lua_rawgeti(lua, LUA_REGISTRYINDEX, refs[0]); // function
@@ -1449,6 +1454,7 @@ static int emit_timeout(void *data) {
   lua_pop(lua, 1); // result
   return repeat;
 }
+#endif
 
 /** `_G.timeout()` Lua function. */
 static int ltimeout(lua_State *L) {
@@ -1855,7 +1861,7 @@ static void t_tabchange(GtkNotebook*_, GtkWidget*__, int page_num, void*___) {
  * @param event An optional GTK mouse button event.
  * @param k The ui table field that contains the context menu.
  */
-static void lL_showcontextmenu(lua_State *L, GdkEventButton *event, char *k) {
+static void lL_showcontextmenu(lua_State *L, GdkEventButton *event, const char *k) {
   if (lua_getglobal(L, "ui") == LUA_TTABLE) {
     if (lua_getfield(L, -1, k) == LUA_TLIGHTUSERDATA) {
       GtkWidget *menu = (GtkWidget *)lua_touserdata(L, -1);
