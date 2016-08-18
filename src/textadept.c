@@ -2498,6 +2498,11 @@ int main(int argc, char **argv) {
   if ((last_slash = strrchr(textadept_home, '/'))) *last_slash = '\0';
   platform = "BSD";
 #endif
+#if 1
+  { const char *ee = getenv("TEXTADEPT_HOME");
+  if (ee && ee[0]) textadept_home = strdup(ee);
+  }
+#endif
 
 #if GTK
   int force = FALSE;
@@ -2514,7 +2519,13 @@ int main(int argc, char **argv) {
 #endif
 
   setlocale(LC_COLLATE, "C"), setlocale(LC_NUMERIC, "C"); // for Lua
-  if (lua = luaL_newstate(), !lL_init(lua, argc, argv, FALSE)) return 1;
+  if (lua = luaL_newstate(), !lL_init(lua, argc, argv, FALSE)) {
+#if CURSES
+    endwin();
+    termkey_destroy(ta_tk);
+#endif
+    return 1;
+  }
   initing = TRUE, new_window(), lL_dofile(lua, "init.lua"), initing = FALSE;
   lL_event(lua, "buffer_new", -1), lL_event(lua, "view_new", -1); // first ones
   l_setglobaldoc(lua, SS(command_entry, SCI_GETDOCPOINTER, 0, 0));
