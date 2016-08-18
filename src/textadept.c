@@ -177,7 +177,7 @@ typedef struct Pane {
 } Pane; // Pane implementation based on code by Chris Emerson.
 static Pane *pane;
 static int statusbar_length[2], command_entry_focused;
-TermKey *ta_tk; // global for CDK use
+extern TermKey *ta_tk; // global for CDK use
 #define SS(view, msg, w, l) scintilla_send_message(view, msg, w, l)
 #define focus_view(view) \
   (focused_view ? SS(focused_view, SCI_SETFOCUS, 0, 0) : 0, \
